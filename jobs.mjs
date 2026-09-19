@@ -63,6 +63,10 @@ const inspectVideo = async (url) => {
     "--skip-download",
     "--no-playlist",
     "--no-warnings",
+    "--impersonate",
+    "chrome",
+    "--extractor-retries",
+    "3",
     "--socket-timeout",
     "20",
     url,
@@ -97,6 +101,10 @@ const convertJob = async (job) => {
     let progressBuffer = "";
     await run("yt-dlp", [
       "--no-playlist",
+      "--impersonate",
+      "chrome",
+      "--extractor-retries",
+      "3",
       "--socket-timeout",
       "20",
       "--retries",
