@@ -5,8 +5,6 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import {
   JOB_TTL_MS,
-  MAX_DURATION_SECONDS,
-  MAX_OUTPUT_BYTES,
   MAX_QUEUE,
 } from "./config.mjs";
 
@@ -56,12 +54,6 @@ const friendlyError = (error) => {
   if (/copyright|geo|country|region|not available/i.test(message)) {
     return "This video is restricted or unavailable in this region.";
   }
-  if (/duration limit/i.test(message)) {
-    return `Video is longer than the ${Math.floor(MAX_DURATION_SECONDS / 60)}-minute limit.`;
-  }
-  if (/File is larger|size limit|too large|max-filesize/i.test(message)) {
-    return `Converted file is larger than the ${Math.floor(MAX_OUTPUT_BYTES / 1024 / 1024)} MB limit.`;
-  }
   return "Conversion failed. Check that the video is public, then try again.";
 };
 
@@ -98,8 +90,6 @@ const convertJob = async (job) => {
     job.status = "checking";
     job.progress = 8;
     const metadata = await inspectVideo(job.url);
-    const duration = Number(metadata.duration || 0);
-    if (duration > MAX_DURATION_SECONDS) throw new Error("duration limit");
     job.title = String(metadata.title || "Dailymotion video").slice(0, 180);
 
     job.status = "downloading";
@@ -113,8 +103,6 @@ const convertJob = async (job) => {
       "3",
       "--fragment-retries",
       "3",
-      "--max-filesize",
-      `${Math.floor(MAX_OUTPUT_BYTES / 1024 / 1024)}M`,
       "--format",
       "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
       "--merge-output-format",
@@ -134,7 +122,6 @@ const convertJob = async (job) => {
     });
 
     const source = await findDownloadedFile(directory);
-    if ((await fs.stat(source)).size > MAX_OUTPUT_BYTES) throw new Error("size limit");
 
     job.status = "converting";
     job.progress = 74;
@@ -163,7 +150,6 @@ const convertJob = async (job) => {
     }
 
     const outputStats = await fs.stat(output);
-    if (outputStats.size > MAX_OUTPUT_BYTES) throw new Error("size limit");
     job.status = "ready";
     job.progress = 100;
     job.outputPath = output;
